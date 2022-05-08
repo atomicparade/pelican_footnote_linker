@@ -120,7 +120,7 @@ def link_footnotes(item: Union[Article, Page]) -> None:
             )
             reference_links = f" {reference_links}"
         else:
-            reference_links = ", ".join(
+            reference_links = "".join(
                 [
                     f'<a href="#ref-{note_num}{ref_name}">^{ref_name}</a>'
                     for ref_name in footnote_references[note_num]
