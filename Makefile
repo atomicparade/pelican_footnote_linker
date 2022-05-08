@@ -3,4 +3,7 @@ lint:
 	mypy --strict pelican/plugins/footnote_linker
 	pylint pelican/plugins/footnote_linker
 
-.PHONY: lint
+sample:
+	cd sample; pelican --debug
+
+.PHONY: lint test sample

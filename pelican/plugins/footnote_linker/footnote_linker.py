@@ -10,101 +10,153 @@ from pelican.contents import Article, Page  # type: ignore
 
 logger = logging.getLogger(__name__)
 
-RE_CITATION = re.compile("\\[ref(\\d+)\\]")  # In-text citation
-CITATION_SUBNAMES = "abcdefghijklmnopqrstuvwxyz"
+RE_REF = re.compile("((?:.|\\n)*?)\\[ref(\\d+)\\]")
+REF_SUBNAMES = "abcdefghijklmnopqrstuvwxyz"
 
-RE_NOTE = re.compile("<p>\\[note(\\d+)\\]((.|\\s)*?)</p>")  # Footnote
+RE_FOOTNOTE_HEADING = re.compile("<h[234]>Footnotes")
 
-# pylint: disable=protected-access
+RE_FOOTNOTE = re.compile("((?:.|\\n)*?)<p>\\[ref(\\d+)\\]((?:.|\\n)*?)</p>")
+
+# pylint: disable=protected-access,too-many-locals,too-many-statements
 def link_footnotes(item: Union[Article, Page]) -> None:
     """Process the references on an article or page."""
 
-    note_citations: dict[str, list[str]] = {}  # Map each note to its in-text citations
-    note_nums: list[str] = []
-    notes_without_citations: list[str] = []
+    # Process references
 
-    match = RE_CITATION.search(item._content)
+    ref_matches = list(RE_REF.finditer(item._content))
 
-    # Process in-text citations
-    while match is not None:
-        note_num = match.group(1)
+    footnote_references: dict[str, list[str]] = {}
 
-        if note_num not in note_citations:
-            note_citations[note_num] = []
+    if len(ref_matches) == 0:
+        # Document has no references
+        return
 
-        note_citation_num = len(note_citations[note_num])
+    footnote_heading_match = RE_FOOTNOTE_HEADING.search(item._content)
 
-        citation_subname = CITATION_SUBNAMES[
-            note_citation_num : (note_citation_num + 1)
-        ]
+    if not footnote_heading_match:
+        logger.warning(
+            'Document "%s" has %i references but no footnotes heading; skipping',
+            item.title,
+            len(ref_matches),
+        )
+        return
 
-        citation_name = f"{citation_subname}"
+    footnote_matches = list(RE_FOOTNOTE.finditer(item._content))
 
-        note_citations[note_num].append(citation_name)
+    if len(footnote_matches) == 0:
+        logger.warning(
+            'Document "%s" has %i references but no footnotes; skipping',
+            item.title,
+            len(ref_matches),
+        )
+        return
 
-        item._content = RE_CITATION.sub(
-            f'[<a href="#note-\\1" id="citation-{note_num}{citation_name}">\\1</a>]',
-            item._content,
-            1,
+    # Any references found below the footnote heading are footnotes, not in-text
+    # references
+    footnote_heading_pos = footnote_heading_match.span()[0]
+
+    processed_content = []
+
+    for match in ref_matches:
+        content_before = match.group(1)
+        note_num = match.group(2)
+
+        ref_pos = match.span(2)[0]
+
+        processed_content.append(content_before)
+
+        if ref_pos >= footnote_heading_pos:
+            # Done finding in-text references
+            first_footnote = match
+
+            # Add the consumed footnote back
+            processed_content.append(f"[ref{note_num}]")
+            break
+
+        if note_num not in footnote_references:
+            footnote_references[note_num] = []
+
+        ref_idx = len(footnote_references[note_num])
+        ref_name = REF_SUBNAMES[ref_idx : (ref_idx + 1)]
+
+        footnote_references[note_num].append(ref_name)
+
+        processed_content.append(
+            f'[<a href="#note-{note_num}" id="ref-{note_num}{ref_name}">{note_num}</a>]'
         )
 
-        match = RE_CITATION.search(item._content)
+    content_after = item._content[first_footnote.span()[1] :]
+    processed_content.append(content_after)
+
+    content_with_references_processed = "".join(processed_content)
 
     # Process footnotes
-    match = RE_NOTE.search(item._content)
 
-    while match is not None:
-        note_num = match.group(1)
+    footnote_matches = list(RE_FOOTNOTE.finditer(content_with_references_processed))
 
-        if not note_num in note_citations:
-            notes_without_citations.append(note_num)
+    processed_footnotes = []
+    footnotes_without_references = []
 
-            item._content = RE_NOTE.sub(
-                '<a id="note-\\1">[\\1]</a>\\2</p>',
-                item._content,
-                1,
+    processed_content = []
+
+    for match in footnote_matches:
+        content_before = match.group(1)
+        note_num = match.group(2)
+        content_within = match.group(3)
+
+        processed_content.append(content_before)
+
+        processed_footnotes.append(note_num)
+
+        if note_num not in footnote_references:
+            footnotes_without_references.append(note_num)
+            reference_links = ""
+        elif len(footnote_references[note_num]) == 1:
+            reference_links = "".join(
+                [
+                    f'<a href="#ref-{note_num}{ref_name}">^</a>'
+                    for ref_name in footnote_references[note_num]
+                ]
             )
+            reference_links = f" {reference_links}"
         else:
-            if len(note_citations[note_num]) == 1:
-                citation_link_list = [
-                    f'<a href="#citation-{note_num}{citation_name}">^</a>'
-                    for citation_name in note_citations[note_num]
+            reference_links = ", ".join(
+                [
+                    f'<a href="#ref-{note_num}{ref_name}">^{ref_name}</a>'
+                    for ref_name in footnote_references[note_num]
                 ]
-            else:
-                citation_link_list = [
-                    f'<a href="#citation-{note_num}{citation_name}">^{citation_name}</a>'
-                    for citation_name in note_citations[note_num]
-                ]
-
-            citation_links = "".join(citation_link_list)
-
-            item._content = RE_NOTE.sub(
-                f'<p id="note-\\1">[\\1]\\2 {citation_links}</p>',
-                item._content,
-                1,
             )
+            reference_links = f" {reference_links}"
 
-        match = RE_NOTE.search(item._content)
+        processed_content.append(
+            f'<p id="note-{note_num}">[{note_num}] {content_within}{reference_links}</p>'
+        )
 
-        note_nums.append(note_num)
+    content_after = content_with_references_processed[match.span()[1] :]
+    processed_content.append(content_after)
 
-    citations_without_notes = list(
-        filter(lambda note_num: note_num not in note_nums, note_citations.keys())
+    references_without_footnotes = list(
+        filter(
+            lambda note_num: note_num not in processed_footnotes,
+            footnote_references.keys(),
+        )
     )
 
-    if len(citations_without_notes) > 0:
+    if len(references_without_footnotes) > 0:
         logger.warning(
-            'Document "%s": Citation(s) %s have no notes',
+            'Document "%s": Reference(s) %s have no footnotes',
             item.title,
-            ", ".join(citations_without_notes),
+            ", ".join(references_without_footnotes),
         )
 
-    if len(notes_without_citations) > 0:
+    if len(footnotes_without_references) > 0:
         logger.warning(
-            'Document "%s": Footnote(s) %s have no citations',
+            'Document "%s": Footnote(s) %s have no references',
             item.title,
-            ", ".join(notes_without_citations),
+            ", ".join(footnotes_without_references),
         )
+
+    item._content = "".join(processed_content)
 
 
 def process_articles(generator: ArticlesGenerator) -> None:

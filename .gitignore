@@ -12,4 +12,4 @@ ENV/
 env.bak/
 venv.bak/
 
-test/build/
+sample/build/
