@@ -1,0 +1,4 @@
+pelican ~= 4.7
+black ~= 22.3
+mypy == 0.950
+pylint ~= 2.13
