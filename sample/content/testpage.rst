@@ -11,7 +11,7 @@ Some sentences have more references than others [ref1] [ref2].
 
 If a reference doesn't have any footnotes, then it should generate a warning [ref3].
 
-Ref3 and ref4 don't have any footnotes [ref3] [ref4].
+Ref3, ref4, ref5, ref6, and ref7 don't have any footnotes [ref3] [ref4][ref5] [ref6][ref7].
 
 Here are some lines that will make the page longer (1).
 
@@ -82,9 +82,9 @@ Footnotes
 with `links </>`_ and
 spread across multiple lines
 
-[ref5] If a footnote isn't referenced, then it should generate a warning.
+[ref8] If a footnote isn't referenced, then it should generate a warning.
 
-[ref6] This is another footnote without any references.
+[ref9] This is another footnote without any references.
 
 Here are some lines that will make the page longer (1).
 

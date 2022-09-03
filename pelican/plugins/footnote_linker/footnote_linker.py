@@ -63,6 +63,12 @@ def link_footnotes(item: Union[Article, Page]) -> None:
 
         ref_pos = match.span(2)[0]
 
+        if len(content_before) >= 1 and content_before[-1] == " ":
+            logger.debug(
+                "content_before ends with space; replacing with non-breaking space"
+            )
+            content_before = content_before[:-1] + "&nbsp;"
+
         processed_content.append(content_before)
 
         if ref_pos >= footnote_heading_pos:
