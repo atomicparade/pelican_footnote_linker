@@ -33,3 +33,24 @@ Footnotes
 Generates:
 
 ![Example image of an article with footnotes](docs/example.png)
+
+
+
+## Customising the reference style
+
+The reference style can be customised by setting `REFERENCE_REGEX` in the
+Pelican configuration file or by setting `ReferenceRegex` in the metadata for an
+individual article or page.
+
+Example:
+
+```
+ReferenceRegex: \\[note=[a-z]+\\]
+
+This is a sentence containing a reference [note=example].
+
+Footnotes
+---------
+
+[note=example] This is a footnote.
+```
