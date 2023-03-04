@@ -69,6 +69,7 @@ def link_footnotes(item: Union[Article, Page]) -> None:
     reference_regex = item.metadata.get("referenceregex", None)
 
     if reference_regex:
+        logger.debug("Using custom reference regex: %s", reference_regex)
         re_reference = re.compile(make_reference_regex(reference_regex))
         re_footnote = re.compile(make_footnote_regex(reference_regex))
     else:
