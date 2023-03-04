@@ -144,7 +144,7 @@ def link_footnotes(item: Union[Article, Page]) -> None:
         ref_id = footnote.add_ref()
 
         processed_content.append(
-            f'[<a href="#{footnote.html_id}" id="{ref_id}">{footnote.num}</a>]'
+            f'<span id="{ref_id}">[<a href="#{footnote.html_id}">{footnote.num}</a>]</span>'
         )
 
     content_after = item._content[first_footnote.span()[1] :]
