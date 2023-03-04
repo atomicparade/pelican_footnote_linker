@@ -23,6 +23,10 @@ RE_FOOTNOTE_HEADING = re.compile(r"<h[234]>Footnotes")
 RE_FOOTNOTE_DEFAULT: Pattern[str]
 
 
+def make_reference_regex(regex: str) -> str:
+    return f"{CONTENT_REGEX}({regex})"
+
+
 def make_footnote_regex(regex: str) -> str:
     return f"{CONTENT_REGEX}<p>({regex}){CONTENT_REGEX}</p>"
 
@@ -33,7 +37,7 @@ def initalize_plugin(pelican_: Pelican) -> None:
     global RE_FOOTNOTE_DEFAULT
 
     pattern = pelican_.settings.get("REFERENCE_REGEX", REFERENCE_REGEX_DEFAULT)
-    RE_REFERENCE_DEFAULT = re.compile(f"{CONTENT_REGEX}({pattern})")
+    RE_REFERENCE_DEFAULT = re.compile(make_reference_regex(pattern))
     RE_FOOTNOTE_DEFAULT = re.compile(make_footnote_regex(pattern))
 
 
@@ -65,7 +69,7 @@ def link_footnotes(item: Union[Article, Page]) -> None:
     reference_regex = item.metadata.get("referenceregex", None)
 
     if reference_regex:
-        re_reference = re.compile(f"{CONTENT_REGEX}{reference_regex}")
+        re_reference = re.compile(make_reference_regex(reference_regex))
         re_footnote = re.compile(make_footnote_regex(reference_regex))
     else:
         re_reference = RE_REFERENCE_DEFAULT
