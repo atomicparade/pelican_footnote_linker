@@ -37,6 +37,7 @@ def initalize_plugin(pelican_: Pelican) -> None:
     global RE_FOOTNOTE_DEFAULT
 
     pattern = pelican_.settings.get("REFERENCE_REGEX", REFERENCE_REGEX_DEFAULT)
+    logger.debug("Default reference regex: %s", pattern)
     RE_REFERENCE_DEFAULT = re.compile(make_reference_regex(pattern))
     RE_FOOTNOTE_DEFAULT = re.compile(make_footnote_regex(pattern))
 
