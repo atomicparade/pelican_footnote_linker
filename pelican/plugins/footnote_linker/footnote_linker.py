@@ -144,7 +144,7 @@ def link_footnotes(item: Union[Article, Page]) -> None:
         ref_id = footnote.add_ref()
 
         processed_content.append(
-            f'<span id="{ref_id}">[<a href="#{footnote.html_id}">{footnote.num}</a>]</span>'
+            f'<span id="{item.slug}-{ref_id}">[<a href="#{item.slug}-{footnote.html_id}">{footnote.num}</a>]</span>'
         )
 
     content_after = item._content[first_footnote.span()[1] :]
@@ -177,18 +177,20 @@ def link_footnotes(item: Union[Article, Page]) -> None:
         footnote = footnotes[footnote_name]
 
         if footnote.ref_count == 1:
-            reference_links = f' <a href="#{footnote.get_ref_html_id(1)}">^</a>'
+            reference_links = (
+                f' <a href="#{item.slug}-{footnote.get_ref_html_id(1)}">^</a>'
+            )
         else:
             reference_links = "".join(
                 [
-                    f'<a href="#{footnote.get_ref_html_id(i)}">^{footnote.get_ref_name(i)}</a>'
+                    f'<a href="#{item.slug}-{footnote.get_ref_html_id(i)}">^{footnote.get_ref_name(i)}</a>'
                     for i in range(1, footnote.ref_count + 1)
                 ]
             )
             reference_links = f" {reference_links}"
 
         processed_content.append(
-            f'<p id="{footnote.html_id}">[{footnote.num}] {content_within}{reference_links}</p>'
+            f'<p id="{item.slug}-{footnote.html_id}">[{footnote.num}] {content_within}{reference_links}</p>'
         )
 
     content_after = content_with_references_processed[match.span()[1] :]
