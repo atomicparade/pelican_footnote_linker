@@ -160,6 +160,9 @@ def link_footnotes(item: Union[Article, Page]) -> None:
 
     processed_content = []
 
+    curr_footnote_num: int = 1
+    first_footnote_out_of_order: Optional[int] = None
+
     for match in footnote_matches:
         content_before = match.group(1)
         footnote_name = match.group(2)
@@ -189,6 +192,10 @@ def link_footnotes(item: Union[Article, Page]) -> None:
             )
             reference_links = f" {reference_links}"
 
+        if (first_footnote_out_of_order is None) and (curr_footnote_num != footnote.num):
+            first_footnote_out_of_order = curr_footnote_num
+        curr_footnote_num += 1
+
         processed_content.append(
             f'<p id="{item.slug}-{footnote.html_id}">[{footnote.num}] {content_within}{reference_links}</p>'
         )
@@ -203,18 +210,33 @@ def link_footnotes(item: Union[Article, Page]) -> None:
         )
     )
 
+    rwf_is_plural = len(references_without_footnotes) != 1
+    fwr_is_plural = len(footnotes_without_references) != 1
+
     if len(references_without_footnotes) > 0:
         logger.warning(
-            'Document "%s": Reference(s) %s have no footnotes',
+            'Document "%s": Reference%s %s ha%s no footnotes',
             item.title,
+            "s" if rwf_is_plural else "",
             ", ".join(references_without_footnotes),
+            "ve" if rwf_is_plural else "s",
         )
 
     if len(footnotes_without_references) > 0:
         logger.warning(
-            'Document "%s": Footnote(s) %s have no references',
+            'Document "%s": Footnote%s %s ha%s no references',
             item.title,
+            "s" if fwr_is_plural else "",
             ", ".join(footnotes_without_references),
+            "ve" if fwr_is_plural else "",
+        )
+
+    if first_footnote_out_of_order is not None:
+        logger.warning(
+            'Document "%s": Footnotes %i through %i are out of order',
+            item.title,
+            first_footnote_out_of_order,
+            curr_footnote_num - 1,
         )
 
     item._content = "".join(processed_content)
